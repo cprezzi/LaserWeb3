@@ -118,7 +118,7 @@ function handleConnection (socket) { // When we open a WS connection, send the l
   socket.on('stop', function(data) {
     socket.emit("connectStatus", 'stopped:'+port.path);
     gcodeQueue.length = 0; // dump the queye
-    if (data == 0) {
+    if (data !== 0) {
       port.write(data+"\n"); // Ui sends the Laser Off command to us if configured, so lets turn laser off before unpausing... Probably safer (;
       console.log('PAUSING:  Sending Laser Off Command as ' + data);
     } else {
@@ -129,7 +129,7 @@ function handleConnection (socket) { // When we open a WS connection, send the l
 
   socket.on('pause', function(data) {
     console.log(chalk.red('PAUSE'));
-    if (data == 0) {
+    if (data !== 0) {
       port.write(data+"\n"); // Ui sends the Laser Off command to us if configured, so lets turn laser off before unpausing... Probably safer (;
       console.log('PAUSING:  Sending Laser Off Command as ' + data);
     } else {
@@ -232,9 +232,9 @@ function handleConnection (socket) { // When we open a WS connection, send the l
       port.on('open', function() {
         socket.broadcast.emit("activePorts", port.path + ',' + port.options.baudRate);
         socket.emit("connectStatus", 'opened:'+port.path);
-        // port.write("?\n"); // Lets check if its LasaurGrbl?
+        port.write("?\n"); // Lets check if its LasaurGrbl?
         // port.write("M115\n"); // Lets check if its Marlin?
-        port.write("version\n"); // Lets check if its Smoothieware?
+        //port.write("version\n"); // Lets check if its Smoothieware?
         // port.write("$fb\n"); // Lets check if its TinyG
         console.log('Connected to ' + port.path + 'at ' + port.options.baudRate);
         isConnected = true;
