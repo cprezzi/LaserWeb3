@@ -307,7 +307,9 @@ Rasterizer.prototype.rasterRow = function(y) {
                   }
                   isLaserOn = false;
                 }
-                this.result += 'G0 X{0} S0\n'.format(posx, gcodey);
+				// this.result += 'G0 X{0} S0\n'.format(posx, gcodey);
+                // CPR: switches from G1 to G0 breaks path optimizer in Grbl.
+                this.result += 'G1 X{0} S0\n'.format(posx, gcodey);
 
               }
             }

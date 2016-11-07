@@ -17,7 +17,7 @@ function initSocket() {
     } else {
       printLog(data, msgcolor, "usb");
     }
-    if (data.indexOf('LPC1768')) {
+    if (data.indexOf('LPC176')) {
       $('#overrides').removeClass('hide');
     }
     if (data.indexOf('Grbl')) {
