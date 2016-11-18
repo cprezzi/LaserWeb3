@@ -96,7 +96,7 @@ function handler (req, res) {
 }
 
 function ConvChar( str ) {
-  var c = {'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&#039;', '#':'&#035;' };
+  var c = {'<':'<', '>':'>', '&':'&', '"':'"', "'":''', '#':'#' };
   return str.replace( /[<&>'"#]/g, function(s) { return c[s]; } );
 }
 
@@ -165,41 +165,47 @@ function handleConnection (socket) { // When we open a WS connection, send the l
     }
   });
 
-  socket.on('override', function(data) {
-    console.log('OVERRIDE: ' + data);
-    var code;
+  socket.on('feedOverride', function(data) {
+	var code;
     switch (data) {
-      case 'Fr1':
-	  case 'Fr10':
-        code = 144;
+      case 0:
+        code = 144;	// set to 100%
         break;
-      case 'F+10':
-        code = 145;
+      case 10:
+        code = 145;	// +10%
         break;
-      case 'F-10':	
-        code = 146;
+      case -10:
+        code = 146;	// -10%	
         break;
-      case 'F+1':
-        code = 147;
+      case 1:
+        code = 147;	// +1%
         break;
-      case 'F-1':
-        code = 148;
+      case -1:
+        code = 148;	// -1%
         break;
-      case 'Sr1':
-      case 'Sr10':
-        code = 153;
+    }
+    if (code) {
+      jumpQ(String.fromCharCode(parseInt(code)));
+    }
+  });
+
+  socket.on('spindleOverride', function(data) {
+	var code;
+    switch (data) {
+      case 0:
+        code = 153;	// set to 100%
         break;
-      case 'S+10':
-        code = 154;
+      case 10:
+        code = 154;	// +10%
         break;
-      case 'S-10':
-        code = 155;
+      case -10:
+        code = 155;	// -10%
         break;
-      case 'S+1':
-        code = 156;
+      case 1:
+        code = 156;	// +1%
         break;
-      case 'S-1':
-        code = 157;
+      case -1:
+        code = 157;	// -1%
         break;
     }
     if (code) {

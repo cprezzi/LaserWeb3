@@ -21,18 +21,24 @@ function initSocket() {
     } else {
       printLog(data, msgcolor, "usb");
     }
-	// is it GRBL >= v1.1?
-	if (data.search('Grbl')) {
-      if (parseFloat(data) >= 1.1) {
-        firmware = 'grbl';
-	    $('#overrides').removeClass('hide');
-      }
-    }
-	// is it Smoothie?
-	if (data.search('LPC176')) {
-      firmware = 'smoothie';
+    if (data.indexOf('LPC176')) {	//LPC1768 or LPC1769 should be Smoothie
       $('#overrides').removeClass('hide');
     }
+    if (data.indexOf('Grbl')) {
+      if (parseFloat(data) >= 1.1) {
+        $('#overrides').removeClass('hide');
+      }
+    }
+  });
+
+  // smoothie feed override report (from server)
+  socket.on('feedOverride', function (data) {
+    $('#oF').html(data.toString() + ' %');
+  });
+
+  // smoothie spindle override report (from server)
+  socket.on('spindleOverride', function (data) {
+    $('#oS').html(data.toString() + ' %');
   });
 
   socket.on('ports', function (data) {
@@ -84,7 +90,6 @@ function initSocket() {
     $("#machineStatus").addClass('badge-notify');
     $("#machineStatus").removeClass('badge-warn');
     $("#machineStatus").removeClass('badge-busy');
-	firmware = '';
     $('#overrides').addClass('hide');
   });
 
@@ -431,19 +436,18 @@ function updateStatus(data) {
     }
   }
 
-  // Extract override values
+  // Extract override values (for Grbl > v1.1 only!)
   startOv = data.search(/ov:/i) + 3;
   if (startOv>3){
     var ov = data.replace('>','').substr(startOv).split(/,|\|/, 3);
-    //printLog("Overrides: " + ov[0] + ',' + ov[1] + ',' + ov[2],  msgcolor, "USB");
 	if (Array.isArray(ov)){
-	  $('#oF').html(ov[0].trim() + '%');
-	  //$('#oR').html(ov[1].trim() + '%');
-	  $('#oS').html(ov[2].trim() + '%');
+	  $('#oF').html(ov[0] + ' %');
+	  //$('#oR').html(ov[1] + ' %');
+	  $('#oS').html(ov[2] + ' %');
 	}
   }
   
-  // Extract realtime Feedrate
+  // Extract realtime Feedrate (for Grbl > v1.1 only!)
   var startFS = data.search(/FS:/i) + 3;
   if (startFS>3){
     var fs = data.replace('>','').substr(startFS).split(/,|\|/, 2);
@@ -458,14 +462,18 @@ function override(cmd) {
   if (isConnected) {
     var connectVia = $('#connectVia').val();
     if (connectVia === "USB") {
-      if (cmd) {
-        //printLog("send override " + cmd, msgcolor, "USB");
-        socket.emit('override', cmd + ovStep );
-	  }
+      var value = parseInt(cmd.substr(1));
+      switch (cmd.substr(0,1)) {
+        case 'F':
+		  socket.emit('feedOverride', value);
+		  break;
+		case 'S':  
+		  socket.emit('spindleOverride', value);
+		  break;
+      }
     } else if (connectVia === "Ethernet") {
-      // needs to be programmed
+      runCommand(value);
     } else if (connectVia === "ESP8266") {
-      // needs to be programmed
     }
   } else {
     printLog('You have to Connect to a machine First!', errorcolor, "usb");
