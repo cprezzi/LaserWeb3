@@ -95,11 +95,6 @@ function handler (req, res) {
   }
 }
 
-function ConvChar( str ) {
-  var c = {'<':'<', '>':'>', '&':'&', '"':'"', "'":''', '#':'#' };
-  return str.replace( /[<&>'"#]/g, function(s) { return c[s]; } );
-}
-
 
 // Websocket <-> Serial
 io.sockets.on('connection', handleConnection);
