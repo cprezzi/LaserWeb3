@@ -30,16 +30,17 @@ var SerialPort = serialport;
 var app = require('http').createServer(handler);
 var io = require('socket.io').listen(app);
 var fs = require('fs');
-var nstatic = require('node-static');
+var static = require('node-static');
 var EventEmitter = require('events').EventEmitter;
 var url = require('url');
 var qs = require('querystring');
 var util = require('util');
 var http = require('http');
 var chalk = require('chalk');
-var isConnected, connectedTo, port, isBlocked, lastsent = "", paused = false, blocked = false, queryLoop, queueCounter, connections = [];
+var isConnected, connectedTo, port, isBlocked, lastSent = "", paused = false, blocked = false, queryLoop, queueCounter, connections = [];
 var gcodeQueue; gcodeQueue = [];
 var request = require('request'); // proxy for remote webcams
+var controllerVersion = 'smoothie';
 var feedOverride = 100;
 var spindleOverride = 100;
 
@@ -73,33 +74,35 @@ var fileServer = new nstatic.Server('./public');
 function handler (req, res) {
 
   var queryData = url.parse(req.url, true).query;
-      if (queryData.url) {
-        if (queryData.url != "") {
-          request({
-              url: queryData.url,  // proxy for remote webcams
-              callback: (err, res, body) => {
-                if (err) {
-                  // console.log(err)
-                  console.error(chalk.red('ERROR:'), chalk.yellow(' Remote Webcam Proxy error: '), chalk.white("\""+queryData.url+"\""), chalk.yellow(' is not a valid URL: '));
-                }
-              }
-          }).on('error', function(e) {
-              res.end(e);
-          }).pipe(res);
-        }
-      } else {
-        fileServer.serve(req, res, function (err, result) {
-      		if (err) {
-      			console.error(chalk.red('ERROR:'), chalk.yellow(' fileServer error:'+req.url+' : '), err.message);
-      		}
-      	});
-      }
+  if (queryData.url) {
+	if (queryData.url != "") {
+	  request({
+		  url: queryData.url,  // proxy for remote webcams
+		  callback: (err, res, body) => {
+			if (err) {
+			  // console.log(err)
+			  console.error(chalk.red('ERROR:'), chalk.yellow(' Remote Webcam Proxy error: '), chalk.white("\""+queryData.url+"\""), chalk.yellow(' is not a valid URL: '));
+			}
+		  }
+	  }).on('error', function(e) {
+		  res.end(e);
+	  }).pipe(res);
+	}
+  } else {
+	fileServer.serve(req, res, function (err, result) {
+		if (err) {
+			console.error(chalk.red('ERROR:'), chalk.yellow(' fileServer error:'+req.url+' : '), err.message);
+		}
+	});
+  }
 }
+
+/*
 function ConvChar( str ) {
   var c = {'<':'<', '>':'>', '&':'&', '"':'"', "'":''', '#':'#' };
   return str.replace( /[<&>'"#]/g, function(s) { return c[s]; } );
 }
-
+*/
 
 // Websocket <-> Serial
 io.sockets.on('connection', handleConnection);
@@ -120,7 +123,7 @@ function handleConnection (socket) { // When we open a WS connection, send the l
   socket.on('stop', function(data) {
     socket.emit("connectStatus", 'stopped:'+port.path);
     gcodeQueue.length = 0; // dump the queye
-    if (data == 0) {
+    if (data !== 0) {
       port.write(data+"\n"); // Ui sends the Laser Off command to us if configured, so lets turn laser off before unpausing... Probably safer (;
       console.log('PAUSING:  Sending Laser Off Command as ' + data);
     } else {
@@ -131,7 +134,7 @@ function handleConnection (socket) { // When we open a WS connection, send the l
 
   socket.on('pause', function(data) {
     console.log(chalk.red('PAUSE'));
-    if (data == 0) {
+    if (data !== 0) {
       port.write(data+"\n"); // Ui sends the Laser Off command to us if configured, so lets turn laser off before unpausing... Probably safer (;
       console.log('PAUSING:  Sending Laser Off Command as ' + data);
     } else {
@@ -230,7 +233,7 @@ function handleConnection (socket) { // When we open a WS connection, send the l
           for (var i in connections) {   // iterate over the array of connections
             connections[i].emit('qCount', gcodeQueue.length);
           }
-        },500);
+        }, 500);
         for (var i in connections) {   // iterate over the array of connections
           connections[i].emit("activePorts", port.path + ',' + port.options.baudRate);
         }
@@ -277,10 +280,10 @@ function handleConnection (socket) { // When we open a WS connection, send the l
 
     } else {
       socket.emit("connectStatus", 'resume:'+port.path);
-      port.write("?\n"); // Lets check if its LasaurGrbl?
-      port.write("M115\n"); // Lets check if its Marlin?
+      //port.write("?\n"); // Lets check if its LasaurGrbl?
+      //port.write("M115\n"); // Lets check if its Marlin?
       port.write("version\n"); // Lets check if its Smoothieware?
-      port.write("$fb\n"); // Lets check if its TinyG
+      //port.write("$fb\n"); // Lets check if its TinyG
     }
   });
 
