@@ -136,7 +136,7 @@ function initSocket() {
 	// increase feed override
 	$('#iF').on('mousedown', function(ev) {
 		console.log("F+ mousedown");
-		override('F+');
+		override('F');
 		ovLoop = setInterval(function() {
 			override('F+');
 		}, 300);
@@ -174,13 +174,13 @@ function initSocket() {
 	// reset feed override
 	$('#rF').on('click', function(ev) {
 		console.log("F reset");
-		override('Fr');
+		override('F0');
 	});
 
 	// increase spindle override
 	$('#iS').on('mousedown', function(ev) {
 		console.log("S+ mousedown");
-		override('S+');
+		override('S');
 		ovLoop = setInterval(function() {
 			override('S+');
 		}, 300);
@@ -218,7 +218,7 @@ function initSocket() {
 	// reset spindle override
 	$('#rS').on('click', function(ev) {
 		console.log("S reset");
-		override('Sr');
+		override('S0');
 	});
 }
 
