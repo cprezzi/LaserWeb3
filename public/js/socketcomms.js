@@ -64,16 +64,9 @@ function initSocket() {
                     $('homeY').hide();
                     $('homeZ').hide();
                 } else {
-                    socket.emit('closePort', 1);
-                    isConnected = false;
-                    $('#closePort').addClass('disabled');
-                    $('#machineStatus').html('Not Connected');
-                    $("#machineStatus").removeClass('badge-ok');
-                    $("#machineStatus").addClass('badge-notify');
-                    $("#machineStatus").removeClass('badge-warn');
-                    $("#machineStatus").removeClass('badge-busy');
-                    $('#overrides').addClass('hide');
-                    printLog("<b><u>You need to update GRBL firmware to the latest version 1.1d!</u></b> (see <a href=\"https://github.com/LaserWeb/LaserWeb3/wiki/Firmware:-GRBL-1.1d\">Wiki</a> for details)", errorcolor, "usb");
+                    $('homeX').hide();
+                    $('homeY').hide();
+                    $('homeZ').hide();
                 }
                 break;
             case 'smoothie':

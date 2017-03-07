@@ -144,9 +144,6 @@ function handleConnection(socket) { // When we open a WS connection, send the li
             switch (firmware) {
                 case 'grbl':
                     port.write('!'); // hold
-                    if (fVersion === '1.1d') {
-                        port.write(String.fromCharCode(0x9E)); // Stop Spindle/Laser
-                    }
                     gcodeQueue.length = 0; // dump the queye
                     grblBufferSize.length = 0; // dump bufferSizes
                     blocked = false;
@@ -186,9 +183,6 @@ function handleConnection(socket) { // When we open a WS connection, send the li
             switch (firmware) {
                 case 'grbl':
                     port.write('!'); // Send hold command
-                    if (fVersion === '1.1d') {
-                        port.write(String.fromCharCode(0x9E)); // Stop Spindle/Laser
-                    }
                     break;
                 case 'smoothie':
                     port.write('M600\n'); // Laser will be turned off by smoothie (in default config!)
@@ -438,7 +432,8 @@ function handleConnection(socket) { // When we open a WS connection, send the li
             writeLog('JOG: ' + dir + dist + ' ' + feed);
             switch (firmware) {
                 case 'grbl':
-                    addQ('$J=G91' + dir + dist + feed + '\n');
+                    //addQ('$J=G91' + dir + dist + feed + '\n');
+                    addQ('G91\nG0' + feed + dir + dist + '\nG90\n');
                     break;
                 case 'smoothie':
                     addQ('G91\nG0' + feed + dir + dist + '\nG90\n');
@@ -590,7 +585,49 @@ function handleConnection(socket) { // When we open a WS connection, send the li
 
             port.on('data', function (data) {
                 writeLog('Recv: ' + data);
-                if (data.indexOf('{') === 0) { // TinyG response
+                if (data.indexOf('ok') === 0) { // Got an OK so we are clear to send
+                    blocked = false;
+                    if (firmware === 'grbl') {
+                        var space = grblBufferSize.shift();
+                        //var buffers = '', sum = GRBL_RX_BUFFER_SIZE;
+                        //for (var i = 0; i < grblBufferSize.length; i++) {
+                        //    sum -= parseInt(grblBufferSize[i]);
+                            //buffers += grblBufferSize[i] + '+';
+                        //}
+                        //writeLog('Buffers: ' + buffers.substr(0, buffers.length-1) + ' Rest: ' + sum);
+                        //writeLog('Buffers released: ' + space + ' Rest: ' + sum);
+                    }
+                    send1Q();
+                } else if (data.indexOf('Grbl') === 0) { // Check if it's Grbl
+                    firmware = 'grbl';
+                    fVersion = data.substr(5, 4); // get version
+                    io.sockets.emit('firmware', firmware + ',' + fVersion);
+                    writeLog('GRBL detected (' + fVersion + ')');
+
+                    // Start intervall for status queries
+                    statusLoop = setInterval(function () {
+                        if (isConnected) {
+                            port.write('?');
+                        }
+                    }, 250);
+                } else if (data.indexOf('LPC176') >= 0) { // LPC1768 or LPC1769 should be Smoothie
+                    //  Build version: edge-6ce309b, Build date: Jan 2 2017 23:50:57, MCU: LPC1768, System Clock: 100MHz
+                    firmware = 'smoothie';
+                    var startPos = data.search(/version:/i) + 9;
+                    fVersion = data.substr(startPos).split(/,/, 1);
+                    startPos = data.search(/Build date:/i) + 12;
+                    fDate = new Date(data.substr(startPos).split(/,/, 1));
+                    var dateString = fDate.toDateString();
+                    io.sockets.emit('firmware', firmware + ',' + fVersion + ',' + dateString);
+                    writeLog('Smoothieware detected (' + fVersion + ', ' + dateString + ')');
+
+                    // Start intervall for status queries
+                    statusLoop = setInterval(function () {
+                        if (isConnected) {
+                            port.write('?');
+                        }
+                    }, 250);
+                } else if (data.indexOf('{') === 0) { // TinyG response
                     jsObject = JSON.parse(data);
                     if (jsObject.hasOwnProperty('r')) {
                         var footer = jsObject.f || (jsObject.r && jsObject.r.f);
@@ -662,53 +699,7 @@ function handleConnection(socket) { // When we open a WS connection, send the li
                             }
                         }, 250);
                     }
-                }
-                if (data.indexOf('Grbl') === 0) { // Check if it's Grbl
-                    firmware = 'grbl';
-                    fVersion = data.substr(5, 4); // get version
-                    io.sockets.emit('firmware', firmware + ',' + fVersion);
-                    writeLog('GRBL detected (' + fVersion + ')');
-
-                    // Start intervall for status queries
-                    statusLoop = setInterval(function () {
-                        if (isConnected) {
-                            port.write('?');
-                        }
-                    }, 250);
-                }
-                if (data.indexOf('LPC176') >= 0) { // LPC1768 or LPC1769 should be Smoothie
-                    //  Build version: edge-6ce309b, Build date: Jan 2 2017 23:50:57, MCU: LPC1768, System Clock: 100MHz
-                    firmware = 'smoothie';
-                    var startPos = data.search(/version:/i) + 9;
-                    fVersion = data.substr(startPos).split(/,/, 1);
-                    startPos = data.search(/Build date:/i) + 12;
-                    fDate = new Date(data.substr(startPos).split(/,/, 1));
-                    var dateString = fDate.toDateString();
-                    io.sockets.emit('firmware', firmware + ',' + fVersion + ',' + dateString);
-                    writeLog('Smoothieware detected (' + fVersion + ', ' + dateString + ')');
-
-                    // Start intervall for status queries
-                    statusLoop = setInterval(function () {
-                        if (isConnected) {
-                            port.write('?');
-                        }
-                    }, 250);
-                }
-                if (data.indexOf('ok') === 0) { // Got an OK so we are clear to send
-                    blocked = false;
-                    if (firmware === 'grbl') {
-                        var space = grblBufferSize.shift();
-                        //var buffers = '', sum = GRBL_RX_BUFFER_SIZE;
-                        //for (var i = 0; i < grblBufferSize.length; i++) {
-                        //    sum -= parseInt(grblBufferSize[i]);
-                            //buffers += grblBufferSize[i] + '+';
-                        //}
-                        //writeLog('Buffers: ' + buffers.substr(0, buffers.length-1) + ' Rest: ' + sum);
-                        //writeLog('Buffers released: ' + space + ' Rest: ' + sum);
-                    }
-                    send1Q();
-                }
-                if (data.indexOf('error') === 0) {
+                } else if (data.indexOf('error') === 0) {
                     if (firmware === 'grbl') {
                         grblBufferSize.shift();
                     }
@@ -761,7 +752,7 @@ function send1Q() {
             case 'grbl':
                 while (gcodeQueue.length > 0 && !blocked && !paused) {
                     // Optimise gcode by stripping spaces - saves a few bytes of serial bandwidth, and formatting commands vs gcode to upper and lowercase as needed
-                    gcode = gcodeQueue.shift().replace(/\s+/g, '');
+                    gcode = gcodeQueue.shift(); //.replace(/\s+/g, '');
                     spaceLeft = grblBufferSpace();
                     gcodeLen = gcode.length;
                     //writeLog('BufferSpace: ' + spaceLeft + ' gcodeLen: ' + gcodeLen);
