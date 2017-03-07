@@ -1,3 +1,4 @@
+//"use strict";
 console.log("%c%s","color: #000; background: green; font-size: 24px;","STARTING LASERWEB");
 // colors for the consolelog
 var msgcolor = '#000000';
@@ -34,13 +35,8 @@ $(document).ready(function() {
     initDragDrop();
 
     // Tooltips
-    $(document).tooltip();
-    $(document).click(function() {
-        $(this).tooltip("option", "hide", {
-            effect: "clip",
-            duration: 500
-        }).off("focusin focusout");
-    });
+    // $(document).tooltip();
+    $('[data-toggle="tooltip"]').tooltip()
 
     $('#g-open').on('click', function() {
         $('#googledrive').modal('show');
@@ -127,7 +123,6 @@ $(document).ready(function() {
         }
     });
 
-
     // Viewer
     var viewer = document.getElementById('renderArea');
 
@@ -141,6 +136,9 @@ $(document).ready(function() {
     checkNumPad();
 
     checkSettingsLocal();
+    
+    // Show/Hide quote tab
+    $("#quote-menu").toggle(loadSetting("showQuoteTab") == "Hide" ? false : true);
 
     // Bind Quote System
     $('.quoteVar').keyup(function(){
@@ -194,7 +192,7 @@ $(document).ready(function() {
         complete : function(value, e, errorElement){
             saveSetting(armpin, value);
             $("#setpinmsg").html("<h3>Pin set to "+value+"</h3>");
-            setTimeout(function() { 
+            setTimeout(function() {
 				$('#pinresetmodal').modal('hide');
 			}, 500);
             // $('#pinresetmodal').modal('hide');
@@ -202,7 +200,7 @@ $(document).ready(function() {
     });
 
     var overridePinCode = loadSetting('safetyLockDisabled');
-    if (overridePinCode == 'Enable') {
+    if (overridePinCode == 'Disable') {
       $('#controlmachine').show();
       $('#armmachine').hide();
     }
@@ -212,8 +210,8 @@ $(document).ready(function() {
         document.title = "CNCWeb";
         $("#statusmodal").modal('show');
         $("#statusTitle").html("<h4>CNC Mode Activated</h4>");
-        $("#statusBody").html("Note: You have activated <b>CNC mode</b> from <kbd>Settings</kbd> -> <kbd>Tools</kbd> -> <kbd>Enable CNC Cam</kbd>");
-        $("#statusBody2").html("While in CNC mode, Laser Raster Engraving is not enabled.  Please only open GCODE, DXF or SVG files.<hr>To revert to Laser Mode, go to <kbd>Settings</kbd> -> <kbd>Tools</kbd> -> <kbd>Enable CNC Cam</kbd>, and change it to <kbd>Disabled</kbd><hr>Please help us improve this experimental feature by giving feedback, asking for improvements, sharing ideas and posting bugs in the <a class='btn btn-sm btn-success' target='_blank' href='https://plus.google.com/communities/115879488566665599508'>Support Community</a>");
+        $("#statusBody").html("Note: You have activated <b>CNC mode</b> from <kbd>Settings</kbd> -> <kbd>Tools</kbd> -> <kbd>CNC Cam</kbd>");
+        $("#statusBody2").html("While in CNC mode, Laser Raster Engraving is not enabled.  Please only open GCODE, DXF or SVG files.<hr>To revert to Laser Mode, go to <kbd>Settings</kbd> -> <kbd>Tools</kbd> -> <kbd>CNC Cam</kbd>, and change it to <kbd>Disabled</kbd><hr>Please help us improve this experimental feature by giving feedback, asking for improvements, sharing ideas and posting bugs in the <a class='btn btn-sm btn-success' target='_blank' href='https://plus.google.com/communities/115879488566665599508'>Support Community</a>");
     }
 
     // Command Console History
@@ -243,7 +241,7 @@ $(document).ready(function() {
 
     // A few gcode input fields need to be caps for the firmware to support it
     $('.uppercase').keyup(function() {
-        // this.value = this.value.toLocaleUpperCase();
+        this.value = this.value.toLocaleUpperCase();
     });
 
 
@@ -398,7 +396,7 @@ function loadFile(f) {
             //r.readAsText(f);
             // Remove the UI elements from last run
             console.group("STL File");
-            var stlloader = new MeshesJS.STLLoader;
+            var stlloader = new MeshesJS.STLLoader();
             r.onload = function(event) {
                 // cleanupThree();
                 // Parse ASCII STL
@@ -409,8 +407,9 @@ function loadFile(f) {
                 // buffer reader
                 var view = new DataView(this.result);
                 // get faces number
+				var faces;
                 try {
-                    var faces = view.getUint32(80, true);
+                    faces = view.getUint32(80, true);
                 } catch (error) {
                     self.onError(error);
                     return;
@@ -516,6 +515,7 @@ function invokeSaveAsDialog(file, fileName) {
         URL.revokeObjectURL(hyperlink.href);
     }
 }
+
 function printLog(text, color, logclass) {
 	if (text.isString) {
       text = text.replace(/\n/g, "<br />");
@@ -527,37 +527,37 @@ function printLog(text, color, logclass) {
     var template = '<p class="pf" style="color: ' + color + ';">';
     if (logclass) {
         if (logclass == "settings") {
-            template += '<i class="fa fa-cogs fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-cogs fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "file") {
-            template += '<i class="fa fa-file-text-o fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-file-text-o fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "google") {
-            template += '<i class="fa fa-google fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-google fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "jog") {
-            template += '<i class="fa fa-arrows fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-arrows fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "macro") {
-            template += '<i class="fa fa-th-large fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-th-large fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "fullscreen") {
-            template += '<i class="fa fa-fullscreen fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-fullscreen fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "raster") {
-            template += '<i class="fa fa-file-image-o fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-file-image-o fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "usb") {
-            template += '<i class="fa fa-usb fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-usb fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "wifi") {
-            template += '<i class="fa fa-wifi fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-wifi fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "viewer") {
-            template += '<i class="fa fa-search fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-search fa-fw" aria-hidden="true"></i>: ';
         }
         if (logclass == "git") {
-            template += '<i class="fa fa-github fa-fw" aria-hidden="true"></i>:&nbsp;';
+            template += '<i class="fa fa-github fa-fw" aria-hidden="true"></i>: ';
         }
     }
     template += text;

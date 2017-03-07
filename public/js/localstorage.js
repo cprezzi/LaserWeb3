@@ -26,6 +26,8 @@ localParams = [
   ['lasermultiply', true],
   ['homingseq', true],
   ['endgcode', false],
+  ['lasertestpower', false],
+  ['lasertestduration', false],
   ['imagePosition', true],
   ['useNumPad', true],
   ['useVideo', true],
@@ -36,7 +38,8 @@ localParams = [
   ['inkscapeDPI', false],
   ['defaultBitmapDPI', true],
   ['safetyLockDisabled', false],
-  ['optimisegcode', false]
+  ['optimisegcode', false],
+  ['showQuoteTab', true]
 ];
 
 
@@ -125,12 +128,12 @@ function restoreSettingsLocal(evt) {
   console.log('event ', evt)
   file = evt.target.files[0];
   fr = new FileReader();
-  fr.onload = receivedText;
+  fr.onload = loadSettings;
   fr.readAsText(file);
 };
 
-function receivedText(e) {
-  lines = e.target.result;
+function loadSettings(e) {
+  lines = e.target ? e.target.result : e ;
   var o = JSON.parse(lines);
   for (var property in o) {
     if (o.hasOwnProperty(property)) {
